@@ -539,6 +539,23 @@ public class DdlDiffTest {
   }
 
   @Test
+  public void generateDifferences_localityGroupsAndTableOptions() throws DdlDiffException {
+    List<String> diff =
+        getDiff(
+            "CREATE TABLE test ( id INT64 NOT NULL ) PRIMARY KEY (id ASC);",
+            "CREATE LOCALITY GROUP fast_storage OPTIONS (storage='ssd');"
+                + "CREATE TABLE test ( id INT64 NOT NULL ) PRIMARY KEY (id ASC), "
+                + "OPTIONS (locality_group='fast_storage');",
+            false);
+
+    assertThat(diff)
+        .containsExactly(
+            "CREATE LOCALITY GROUP fast_storage OPTIONS (storage='ssd')",
+            "ALTER TABLE test SET OPTIONS (locality_group='fast_storage')")
+        .inOrder();
+  }
+
+  @Test
   public void differentIndexesWithNoRecreate() {
     Map<String, Boolean> options =
         ImmutableMap.of(ALLOW_DROP_STATEMENTS_OPT, false, ALLOW_RECREATE_INDEXES_OPT, false);

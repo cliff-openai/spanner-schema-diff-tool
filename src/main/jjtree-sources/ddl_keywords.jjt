@@ -69,6 +69,7 @@ TOKEN:
   | <LATERAL:              "lateral">
   | <LEFT:                 "left">
   | <LIKE:                 "like">
+  | <LOCALITY:             "locality">
   | <LIMIT:                "limit">
   | <LOOKUP:               "lookup">
   | <MERGE:                "merge">
