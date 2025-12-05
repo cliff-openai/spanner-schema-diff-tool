@@ -186,6 +186,34 @@ public class DDLParserTest {
     assertThat(statement.toString()).isEqualTo("CREATE SCHEMA schema_name");
   }
 
+  @Test
+  public void parseLocalityGroupAndTableOptions() throws ParseException {
+    ASTcreate_locality_group_statement localityGroup =
+        (ASTcreate_locality_group_statement)
+            parse("CREATE LOCALITY GROUP fast_storage OPTIONS (storage='ssd')").jjtGetChild(0);
+
+    assertThat(localityGroup.toString())
+        .isEqualTo("CREATE LOCALITY GROUP fast_storage OPTIONS (storage='ssd')");
+
+    ASTcreate_table_statement tableWithLocalityGroup =
+        (ASTcreate_table_statement)
+            parse(
+                    "CREATE TABLE test ( id INT64 NOT NULL ) PRIMARY KEY (id ASC), "
+                        + "OPTIONS (locality_group='fast_storage')")
+                .jjtGetChild(0);
+
+    assertThat(tableWithLocalityGroup.toString())
+        .isEqualTo(
+            "CREATE TABLE test ( id INT64 NOT NULL ) PRIMARY KEY (id ASC), "
+                + "OPTIONS (locality_group='fast_storage')");
+
+    ASTcreate_table_statement reparsedTable =
+        (ASTcreate_table_statement)
+            parseAndVerifyToString(tableWithLocalityGroup.toString()).jjtGetChild(0);
+
+    assertThat(tableWithLocalityGroup).isEqualTo(reparsedTable);
+  }
+
   private static void parseCheckingParseException(String ddlStatement, String exceptionContains) {
     ParseException e =
         assertThrows(ParseException.class, () -> parseAndVerifyToString(ddlStatement));

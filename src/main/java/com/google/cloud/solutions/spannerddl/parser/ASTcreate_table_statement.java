@@ -86,6 +86,10 @@ public class ASTcreate_table_statement extends SimpleNode {
         getOptionalChildByType(children, ASTrow_deletion_policy_clause.class));
   }
 
+  public synchronized Optional<ASToptions_clause> getOptionsClause() {
+    return Optional.ofNullable(getOptionalChildByType(children, ASToptions_clause.class));
+  }
+
   public ASTcreate_table_statement clearConstraints() {
     this.withConstraints = false;
     return this;
@@ -122,11 +126,12 @@ public class ASTcreate_table_statement extends SimpleNode {
             Joiner.on(", ")
                 .skipNulls()
                 .join(
-                    getPrimaryKey(),
-                    getOptionalChildByType(children, ASTtable_interleave_clause.class),
-                    (withConstraints
-                        ? getOptionalChildByType(children, ASTrow_deletion_policy_clause.class)
-                        : null)));
+            getPrimaryKey(),
+            getOptionalChildByType(children, ASTtable_interleave_clause.class),
+            (withConstraints
+                ? getOptionalChildByType(children, ASTrow_deletion_policy_clause.class)
+                : null),
+            getOptionsClause().orElse(null)));
   }
 
   private void validateChildren() {
@@ -141,6 +146,7 @@ public class ASTcreate_table_statement extends SimpleNode {
             ASTprimary_key.class,
             ASTtable_interleave_clause.class,
             ASTrow_deletion_policy_clause.class,
+            ASToptions_clause.class,
             ASTannotation.class));
   }
 
