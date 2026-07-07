@@ -39,6 +39,7 @@ import com.google.cloud.solutions.spannerddl.parser.ASTkey_part;
 import com.google.cloud.solutions.spannerddl.parser.ASToptions_clause;
 import com.google.cloud.solutions.spannerddl.parser.ASTrow_deletion_policy_clause;
 import com.google.cloud.solutions.spannerddl.parser.ASTtable;
+import com.google.cloud.solutions.spannerddl.parser.ASTtable_interleave_clause;
 import com.google.cloud.solutions.spannerddl.parser.DdlParser;
 import com.google.cloud.solutions.spannerddl.parser.DdlParserTreeConstants;
 import com.google.cloud.solutions.spannerddl.parser.ParseException;
@@ -512,10 +513,9 @@ public class DdlDiff {
 
     // On delete changed
     if (left.getInterleaveClause().isPresent()
-        && !left.getInterleaveClause()
-            .get()
-            .getOnDelete()
-            .equals(right.getInterleaveClause().get().getOnDelete())) {
+        && !Objects.equals(
+            left.getInterleaveClause().get().getOnDelete(),
+            right.getInterleaveClause().get().getOnDelete())) {
       alterStatements.add(
           "ALTER TABLE "
               + left.getTableName()
@@ -853,7 +853,10 @@ public class DdlDiff {
             }
             break;
           case DdlParserTreeConstants.JJTCREATE_TABLE_STATEMENT:
-            if (((ASTcreate_table_statement) ddlStatement.jjtGetChild(0))
+            ASTcreate_table_statement createTable =
+                (ASTcreate_table_statement) ddlStatement.jjtGetChild(0);
+            createTable.getInterleaveClause().ifPresent(ASTtable_interleave_clause::validate);
+            if (createTable
                 .getConstraints()
                 .containsKey(ASTcreate_table_statement.ANONYMOUS_NAME)) {
               throw new IllegalArgumentException(

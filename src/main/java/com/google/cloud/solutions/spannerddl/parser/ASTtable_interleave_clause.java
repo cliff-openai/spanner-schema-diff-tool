@@ -18,6 +18,7 @@ package com.google.cloud.solutions.spannerddl.parser;
 
 import com.google.cloud.solutions.spannerddl.diff.AstTreeUtils;
 import com.google.common.base.Joiner;
+import org.jspecify.annotations.Nullable;
 
 /** Abstract Syntax Tree parser object for "table_interleave_clause" token */
 public class ASTtable_interleave_clause extends SimpleNode {
@@ -30,18 +31,34 @@ public class ASTtable_interleave_clause extends SimpleNode {
   }
 
   public String getParentTableName() {
-    return (AstTreeUtils.getOptionalChildByType(children, ASTparent.class) == null ? "" : "PARENT ")
+    return (isParentInterleave() ? "PARENT " : "")
         + AstTreeUtils.tokensToString(
             AstTreeUtils.getChildByType(children, ASTinterleave_in.class));
   }
 
-  public String getOnDelete() {
+  public boolean isParentInterleave() {
+    return AstTreeUtils.getOptionalChildByType(children, ASTparent.class) != null;
+  }
+
+  public @Nullable String getOnDelete() {
+    validate();
     ASTon_delete_clause ondelete =
         AstTreeUtils.getOptionalChildByType(children, ASTon_delete_clause.class);
+    if (!isParentInterleave()) {
+      return null;
+    }
     if (ondelete == null) {
       return ASTon_delete_clause.ON_DELETE_NO_ACTION;
     } else {
       return ondelete.toString();
+    }
+  }
+
+  public void validate() {
+    if (!isParentInterleave()
+        && AstTreeUtils.getOptionalChildByType(children, ASTon_delete_clause.class) != null) {
+      throw new IllegalArgumentException(
+          "ON DELETE is only valid for INTERLEAVE IN PARENT clauses");
     }
   }
 
