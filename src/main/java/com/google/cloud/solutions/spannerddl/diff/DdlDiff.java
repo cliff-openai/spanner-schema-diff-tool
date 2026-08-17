@@ -514,8 +514,8 @@ public class DdlDiff {
         alterStatements.add(
             "ALTER TABLE "
                 + left.getTableName()
-                + " SET INTERLEAVE IN "
-                + rightInterleave.getParentTableName());
+                + " SET "
+                + rightInterleave.getInterleaveTargetClause());
       }
     }
 

@@ -30,8 +30,8 @@ public class ASTtable_interleave_clause extends SimpleNode {
     super(p, id);
   }
 
-  public String getParentTableName() {
-    return (isParentInterleave() ? "PARENT " : "") + getInterleaveTableName();
+  public String getInterleaveTargetClause() {
+    return "INTERLEAVE IN " + (isParentInterleave() ? "PARENT " : "") + getInterleaveTableName();
   }
 
   public String getInterleaveTableName() {
@@ -67,6 +67,6 @@ public class ASTtable_interleave_clause extends SimpleNode {
 
   @Override
   public String toString() {
-    return Joiner.on(" ").skipNulls().join("INTERLEAVE IN", getParentTableName(), getOnDelete());
+    return Joiner.on(" ").skipNulls().join(getInterleaveTargetClause(), getOnDelete());
   }
 }
