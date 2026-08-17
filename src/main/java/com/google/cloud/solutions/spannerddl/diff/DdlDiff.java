@@ -492,18 +492,31 @@ public class DdlDiff {
     //   - change not null on column.
     // note that constraints need to be dropped before columns, and created after columns.
 
-    // Check interleaving has not changed.
+    // The physical interleave relationship cannot change, but its enforcement can.
     if (left.getInterleaveClause().isPresent() != right.getInterleaveClause().isPresent()) {
       throw new DdlDiffException("Cannot change interleaving on table " + left.getTableName());
     }
 
-    if (left.getInterleaveClause().isPresent()
-        && !left.getInterleaveClause()
-            .get()
-            .getParentTableName()
-            .equals(right.getInterleaveClause().get().getParentTableName())) {
-      throw new DdlDiffException(
-          "Cannot change interleaved parent of table " + left.getTableName());
+    boolean interleaveEnforcementChanged = false;
+    if (left.getInterleaveClause().isPresent()) {
+      ASTtable_interleave_clause leftInterleave = left.getInterleaveClause().get();
+      ASTtable_interleave_clause rightInterleave = right.getInterleaveClause().get();
+      if (!leftInterleave
+          .getInterleaveTableName()
+          .equals(rightInterleave.getInterleaveTableName())) {
+        throw new DdlDiffException(
+            "Cannot change interleaved parent of table " + left.getTableName());
+      }
+
+      interleaveEnforcementChanged =
+          leftInterleave.isParentInterleave() != rightInterleave.isParentInterleave();
+      if (interleaveEnforcementChanged) {
+        alterStatements.add(
+            "ALTER TABLE "
+                + left.getTableName()
+                + " SET INTERLEAVE IN "
+                + rightInterleave.getParentTableName());
+      }
     }
 
     // Check Key is same
@@ -513,9 +526,12 @@ public class DdlDiff {
 
     // On delete changed
     if (left.getInterleaveClause().isPresent()
+        && right.getInterleaveClause().get().isParentInterleave()
         && !Objects.equals(
             left.getInterleaveClause().get().getOnDelete(),
-            right.getInterleaveClause().get().getOnDelete())) {
+            right.getInterleaveClause().get().getOnDelete())
+        && (!interleaveEnforcementChanged
+            || !"ON DELETE NO ACTION".equals(right.getInterleaveClause().get().getOnDelete()))) {
       alterStatements.add(
           "ALTER TABLE "
               + left.getTableName()

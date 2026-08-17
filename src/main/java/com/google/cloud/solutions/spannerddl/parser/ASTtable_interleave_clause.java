@@ -31,9 +31,12 @@ public class ASTtable_interleave_clause extends SimpleNode {
   }
 
   public String getParentTableName() {
-    return (isParentInterleave() ? "PARENT " : "")
-        + AstTreeUtils.tokensToString(
-            AstTreeUtils.getChildByType(children, ASTinterleave_in.class));
+    return (isParentInterleave() ? "PARENT " : "") + getInterleaveTableName();
+  }
+
+  public String getInterleaveTableName() {
+    return AstTreeUtils.tokensToString(
+        AstTreeUtils.getChildByType(children, ASTinterleave_in.class));
   }
 
   public boolean isParentInterleave() {

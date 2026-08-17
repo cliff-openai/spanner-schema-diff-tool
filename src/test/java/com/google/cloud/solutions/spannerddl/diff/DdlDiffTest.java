@@ -334,15 +334,6 @@ public class DdlDiffTest {
         true,
         "Cannot change interleaved parent of table test1");
 
-    // add  parent constraint
-    getDiffCheckDdlDiffException(
-        "create table test1 (col1 int64, col2 int64) "
-            + "primary key (col1), interleave in testparent;",
-        "create table test1 (col1 int64, col2 int64) "
-            + "primary key (col1), interleave in parent testparent",
-        true,
-        "Cannot change interleaved parent of table test1");
-
     // change on delete
     assertThat(
             getDiff(
@@ -361,6 +352,57 @@ public class DdlDiffTest {
                     + "primary key (col1), interleave in parent testparent on delete cascade",
                 true))
         .containsExactly("ALTER TABLE test1 SET ON DELETE CASCADE");
+  }
+
+  @Test
+  public void generateAlterTable_removeInterleaveParentEnforcement() throws DdlDiffException {
+    assertThat(
+            getDiff(
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in parent testparent on delete cascade;",
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in testparent;",
+                true))
+        .containsExactly("ALTER TABLE test1 SET INTERLEAVE IN testparent");
+  }
+
+  @Test
+  public void generateAlterTable_addInterleaveParentEnforcement() throws DdlDiffException {
+    assertThat(
+            getDiff(
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in testparent;",
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in parent testparent;",
+                true))
+        .containsExactly("ALTER TABLE test1 SET INTERLEAVE IN PARENT testparent");
+  }
+
+  @Test
+  public void generateAlterTable_addInterleaveParentEnforcementWithCascade()
+      throws DdlDiffException {
+    assertThat(
+            getDiff(
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in testparent;",
+                "create table test1 (col1 int64, col2 int64) "
+                    + "primary key (col1), interleave in parent testparent on delete cascade;",
+                true))
+        .containsExactly(
+            "ALTER TABLE test1 SET INTERLEAVE IN PARENT testparent",
+            "ALTER TABLE test1 SET ON DELETE CASCADE")
+        .inOrder();
+  }
+
+  @Test
+  public void generateAlterTable_changeInterleaveParentAndEnforcementRejected() {
+    getDiffCheckDdlDiffException(
+        "create table test1 (col1 int64, col2 int64) "
+            + "primary key (col1), interleave in parent testparent;",
+        "create table test1 (col1 int64, col2 int64) "
+            + "primary key (col1), interleave in otherparent;",
+        true,
+        "Cannot change interleaved parent of table test1");
   }
 
   @Test
